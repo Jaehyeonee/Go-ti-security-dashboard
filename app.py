@@ -10,6 +10,7 @@ import base64  # Basic Auth 인증용
 import urllib3  # SSL 경고 억제
 
 # 앱 최상단에 배치
+
 hide_streamlit_style = """
                 <style>
                 div[data-testid="stToolbar"] {
