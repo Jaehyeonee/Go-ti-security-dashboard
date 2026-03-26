@@ -98,25 +98,51 @@ if "is_logged_in" not in st.session_state:
     st.session_state.is_logged_in = False
 if "authenticator" not in st.session_state:
     st.session_state.authenticator = None
+if "username" not in st.session_state:
+    st.session_state.username = None
+
+# OIDC 로그인 시 Streamlit 내장 st.user 객체 사용 가능
+if hasattr(st, "user"):
+    try:
+        user_info = st.user.to_dict() if hasattr(st.user, "to_dict") else dict(st.user)
+    except Exception:
+        user_info = {}
+
+    if user_info:
+        st.session_state.is_logged_in = True
+        st.session_state.username = user_info.get("given_name") or user_info.get("email") or "Authenticated User"
 
 # 키를 입력하지 않은 초기 실행 상태면 바로 화면을 볼 수 있게 테스트 모드로 통과시킵니다.
 if POOL_ID == "YOUR_POOL_ID":
     st.session_state.is_logged_in = True
     st.sidebar.warning("⚠️ 테스트 모드 (Cognito 연동 전)")
 else:
-    if st.session_state.authenticator is None:
-        st.session_state.authenticator = CognitoAuthenticator(
-            pool_id=POOL_ID,
-            app_client_id=APP_CLIENT_ID,
-            app_client_secret=APP_CLIENT_SECRET,
-        )
-    
-    # 이미 로그인되어 있지 않으면 로그인 시도
+    # st.user가 없거나 OIDC 비활성 시 CognitoAuthenticator 사용
     if not st.session_state.is_logged_in:
+        if st.session_state.authenticator is None:
+            st.session_state.authenticator = CognitoAuthenticator(
+                pool_id=POOL_ID,
+                app_client_id=APP_CLIENT_ID,
+                app_client_secret=APP_CLIENT_SECRET,
+            )
+
+        # 이미 로그인되어 있지 않으면 로그인 시도
         st.session_state.is_logged_in = st.session_state.authenticator.login()
 
+        # 로그인 성공 후 username 저장
+        if st.session_state.is_logged_in:
+            try:
+                ua = st.session_state
+                username = ua.get("username") if ua else None
+                if not username:
+                    username = ua.get("auth_email") if ua else None
+            except (AttributeError, TypeError):
+                username = None
+
+            st.session_state.username = username or "Authenticated User"
+
 if not st.session_state.is_logged_in:
-    st.info("Go-Ti 보안팀 Admin 시스템입니다. AWS Cognito 계정으로 로그인해주세요.")
+    st.info("Go-Ti 보안팀 Admin 시스템입니다. 등록된 관리자 계정으로 로그인해주세요.")
     st.stop()
 
 def logout():
@@ -125,6 +151,7 @@ def logout():
         st.session_state.authenticator.logout()
     st.session_state.is_logged_in = False
     st.session_state.authenticator = None
+    st.session_state.username = None
 
 # --- 2. Upstage API 클라이언트 ---
 UPSTAGE_API_KEY = st.secrets.get("UPSTAGE_API_KEY", "YOUR_UPSTAGE_API_KEY")
@@ -141,12 +168,18 @@ GRAFANA_DASHBOARD_UID = st.secrets.get("GRAFANA_DASHBOARD_UID", "macro-detection
 # --- 3. 사이드바 ---
 with st.sidebar:
     st.title("🦠 Go-Ti Security Admin")
-    menu = st.radio("메뉴 선택", ["실시간 관제", "AI 방어 어시스턴트", "의심 유저 수동 심사", "📊 Grafana 모니터링"])
+    
+    # 로그인한 사용자 정보 표시
+    if st.session_state.username:
+        st.caption(f"**👤 {st.session_state.username}**")
+        st.divider()
+    
+    menu = st.radio("MENU", ["실시간 매크로 모니터링", "AI 방어 어시스턴트", "의심 유저 수동 심사", "Grafana"])
     st.divider()
     st.button("로그아웃", on_click=logout)
 
 # --- 4. 화면 라우팅 ---
-if menu == "실시간 관제":
+if menu == "실시간 매크로 모니터링":
     st.subheader("📊 실시간 매크로 접속 현황")
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("금일 접속 건수", "14,859 건", "+120")
@@ -236,7 +269,7 @@ elif menu == "의심 유저 수동 심사":
                         st.session_state.suspicious_users[idx] = user
                         st.rerun()
                 st.divider()
-elif menu == "📊 Grafana 모니터링":
+elif menu == "Grafana":
     st.subheader("📊 Grafana 실시간 모니터링")
     
     # Grafana 연동 상태 확인
