@@ -11,7 +11,7 @@ import urllib3  # SSL 경고 억제
 
 if not hasattr(st, "experimental_rerun"):
     st.experimental_rerun = st.rerun
-    
+
 # SSL 경고 억제 (개발 환경 자체 서명 인증서 사용 시)
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -149,12 +149,12 @@ if menu == "실시간 관제":
         st.markdown("**탐지 유형별 차단 현황**")
         df_chart = pd.DataFrame({"유형": ["행위분석", "해외접속", "접속통계"], "건수": [4752, 2830, 479]})
         fig = px.bar(df_chart, x="유형", y="건수", color="유형", text_auto=True)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
 
     with right_col:
         st.markdown("**최근 매크로 차단 이력**")
         df_history = load_history_from_db()
-        st.dataframe(df_history, use_container_width=True, hide_index=True)
+        st.dataframe(df_history, width='stretch', hide_index=True)
 
 elif menu == "AI 방어 어시스턴트":
     st.subheader("🫆 매크로 방어 정책 에이전트")
@@ -280,7 +280,7 @@ GRAFANA_SHARE_TOKEN = "your-embed-share-token"  # 선택사항''', language="tom
                     })
                 
                 if alert_df:
-                    st.dataframe(pd.DataFrame(alert_df), use_container_width=True)
+                    st.dataframe(pd.DataFrame(alert_df), width='stretch')
                 else:
                     st.success("✅ 현재 활성 알러트가 없습니다.")
             else:
