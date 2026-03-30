@@ -5,4 +5,5 @@ openai>=2.0.0
 streamlit-cognito-auth>=1.0.0
 requests>=2.31.0
 folium>=0.17.0
+streamlit-folium>=0.22.0
 urllib3>=1.26.0
