@@ -7,6 +7,7 @@ jobs:
   sync:
     name: Sync forked repo
     runs-on: ubuntu-latest
+    if: github.repository == 'Team-Ikujo/Go-ti-security-dashboard'
 
     steps:
       - name: Checkout main
