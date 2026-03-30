@@ -59,12 +59,15 @@ def inject_custom_css():
         }
 
         # Native Streamlit border container override (for charts box)
-        div[data-testid="stColumn"]:has(.chart-bg-target) {
+        div[data-testid="stVerticalBlockBorderWrapper"] {
             background-color: #ffffff !important;
             border-radius: 12px !important;
-            padding: 20px 20px 10px 20px !important;
-            border: 1px solid #eef2f6 !important;
             box-shadow: 0 4px 15px rgba(0,0,0,0.03) !important;
+        }
+        div[data-testid="stVerticalBlockBorderWrapper"] > div {
+            background-color: #ffffff !important;
+            border-radius: 12px !important;
+            border: none !important;
         }
 
         /* Top Metrics Custom Dashboard CSS */
