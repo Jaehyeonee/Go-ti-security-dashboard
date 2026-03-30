@@ -1,11 +1,11 @@
 [global]
 showWarningOnDirectExecution = false
 [client]
-toolbarMode = "minimal"
+toolbarMode = "none"
 showErrorDetails = "none"
 
 [ui]
-hideTopBar = false
+hideTopBar = true
 
 [theme]
 base = "light"
