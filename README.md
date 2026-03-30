@@ -124,6 +124,10 @@ cp .streamlit/secrets.toml.example .streamlit/secrets.toml
 streamlit run app.py
 ```
 
+### 배포
+main 브랜치에 수정 사항 적용 시, github Actions workflow에 의해 자동으로 배포됩니다.
+```.github/workflows/sync.yml```
+
 ---
 
 ## 🔐 환경 변수 설정

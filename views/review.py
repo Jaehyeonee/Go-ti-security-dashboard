@@ -100,7 +100,7 @@ def handle_review_action(event_id, action):
 
 def render_review():
     render_header("MANUAL REVIEW")
-    st.markdown('<div class="section-title">고위험 계정 수동 검토</div>', unsafe_allow_html=True)
+    st.header("고위험 계정 수동 검토")
     st.write("실시간 AI 탐지로 적발된 이력 중 추가 확인이 필요한 건(Pending/Warning)에 대해 수동 검토를 진행합니다.")
     st.markdown("<br>", unsafe_allow_html=True)
 
