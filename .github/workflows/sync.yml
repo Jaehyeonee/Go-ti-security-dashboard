@@ -9,16 +9,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout develop
-        uses: actions/checkout@v4
+      - name: Checkout main
+        uses: actions/checkout@v5
         with:
-          token: ${{ secrets.AUTO_ACTIONS }}
+          token: ${{ secrets.FORKED_REPO_TOKEN }}
           fetch-depth: 0
           ref: main
           
       - name: Add remote-url
         run: |
-          git remote add forked-repo https://Jaehyeonee:${{ secrets.AUTO_ACTIONS }}@github.com/Jaehyeonee/[repoName]
+          git remote add forked-repo https://Jaehyeonee:${{ secrets.FORKED_REPO_TOKEN }}@github.com/Jaehyeonee/Go-ti-security-dashboard
           git config user.name Jaehyeonee
           git config user.email ${{ secrets.EMAIL }}
 
