@@ -1,5 +1,13 @@
 [client]
-toolbarMode = “minimal”
+toolbarMode = "minimal"
 
 [ui]
-hideTopBar = true
+hideTopBar = false
+
+[theme]
+base = "light"
+primaryColor = "#00c292"
+backgroundColor = "#f4f7f6"
+secondaryBackgroundColor = "#ffffff"
+textColor = "#1f2937"
+font = "sans serif"
