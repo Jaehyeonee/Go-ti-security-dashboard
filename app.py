@@ -32,6 +32,7 @@ st.markdown(
 st.set_page_config(page_title="Go-Ti Security Admin", layout="wide")
 
 from utils.db import init_db
+from utils.config import is_mock_mode
 from utils.auth import init_auth
 from utils.session import init_agent_sessions
 
@@ -45,8 +46,9 @@ from views.grafana import render_grafana
 # 앱 최상단에 CSS 레이아웃 주입
 inject_custom_css()
 
-# 앱 시작 시 DB 상태 초기화
-init_db()
+# 앱 시작 시 DB 상태 초기화 (Mock 모드에서만)
+if is_mock_mode():
+    init_db()
 
 # 에이전트 다중 세션 스토어 초기화
 init_agent_sessions()

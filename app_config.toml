@@ -1,0 +1,6 @@
+# ===== Go-Ti Dashboard 앱 설정 =====
+# "mock" → Mock 데이터 기반 (개발/데모용)
+# "production" → OpenSearch + 백엔드 API 연동 (실서비스용)
+
+[app]
+mode = "mock"

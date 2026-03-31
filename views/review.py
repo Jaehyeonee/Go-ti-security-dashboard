@@ -3,69 +3,19 @@ import time
 import json
 from components.header import render_header
 from components.charts import render_status_donut_chart
-from utils.db import get_enriched_history, update_override_status
+from data.provider import get_provider
 
-def fetch_opensearch_report_mock(event_id):
-    """5 mock OpenSearch reports logic simulating elastic backend."""
-    print(f"[OPENSEARCH API CALL] GET /api/v1/opensearch/reports/{event_id}")
-    time.sleep(0.5)
-    
-    mock_db = {
-        "#VZ1000": {
-            "index": "macro-events-2026.03",
-            "_id": "doc_vz1000",
-            "threat_score": 94,
-            "matched_rules": ["Mouse Linearity Threshold Exceeded", "Click Frequency High"],
-            "raw_logs": {"click_rate": "15 cps", "mouse_variance": 0.001, "ip_reputation": "suspicious"}
-        },
-        "#VZ1001": {
-            "index": "macro-events-2026.03",
-            "_id": "doc_vz1001",
-            "threat_score": 72,
-            "matched_rules": ["API Abuse Detected", "Invalid User Agent"],
-            "raw_logs": {"api_calls_per_sec": 50, "user_agent": "python-requests/2.31", "ip_reputation": "clean"}
-        },
-        "#VZ1002": {
-            "index": "macro-events-2026.03",
-            "_id": "doc_vz1002",
-            "threat_score": 88,
-            "matched_rules": ["Session Token Reused", "Simultaneous Login"],
-            "raw_logs": {"active_sessions": 5, "geo_location": "Russia", "ip_reputation": "bad"}
-        },
-        "#VZ1003": {
-            "index": "macro-events-2026.03",
-            "_id": "doc_vz1003",
-            "threat_score": 61,
-            "matched_rules": ["Fast Checkout", "Bypass Captcha Time"],
-            "raw_logs": {"checkout_duration_ms": 120, "captcha_solve_time": 0.1, "ip_reputation": "clean"}
-        },
-        "#VZ1004": {
-            "index": "macro-events-2026.03",
-            "_id": "doc_vz1004",
-            "threat_score": 45,
-            "matched_rules": ["Proxy IP Detected"],
-            "raw_logs": {"proxy_type": "Data Center", "anonymity_level": "High", "ip_reputation": "warning"}
-        }
-    }
-    
-    default_mock = {
-        "index": "macro-events-unknown",
-        "_id": f"doc_{event_id.lower()}",
-        "threat_score": "N/A",
-        "matched_rules": ["General Suspicious Behavior"],
-        "raw_logs": {"detail": "No deep logs available for this generated ID."}
-    }
-    
-    return mock_db.get(event_id, default_mock)
 
 @st.dialog("분석 리포트 상세", width="large")
 def show_opensearch_report(event_id, row_data):
+    provider = get_provider()
+    
     st.subheader(f"🔍 {event_id} 매크로 탐지 원인 분석")
     st.caption("OpenSearch 클러스터에 저장된 상세 백엔드 이벤트 로그입니다.")
     st.divider()
     
     with st.spinner("OpenSearch에서 로우 데이터를 불러오는 중..."):
-        report = fetch_opensearch_report_mock(event_id)
+        report = provider.get_detection_report(event_id)
         
     st.markdown(f"**탐지된 보안 룰 (Matched Rules):**")
     for rule in report['matched_rules']:
@@ -81,16 +31,16 @@ def show_opensearch_report(event_id, row_data):
 
 def execute_review_api_call(event_id, action):
     """
-    Mock API Call to handle manual review action (Block/Pass).
-    Exhibits brief simulated latency and console logs before saving.
+    Provider를 통해 수동 심사 액션(Block/Pass)을 처리합니다.
+    Mock 모드에서는 세션 상태만 업데이트, Production에서는 실제 API 호출.
     """
-    # Simulate Network Request to backend (e.g., /api/v1/interventions/action)
-    print(f"[API CALL] POST /api/v1/interventions/{event_id}/action -> Payload: {{'action': '{action}'}}")
-    time.sleep(0.5) 
+    provider = get_provider()
+    success = provider.update_event_status(event_id, action)
     
-    # Save the changed state in the local Session DB so the dashboard correctly updates
-    update_override_status(event_id, action)
-    print(f"[API SUCCESS] Event {event_id} status updated to {action}.")
+    if success:
+        print(f"[SUCCESS] Event {event_id} status updated to {action}.")
+    else:
+        print(f"[FAIL] Event {event_id} status update failed.")
 
 def handle_review_action(event_id, action):
     """Button click callback handler."""
@@ -99,13 +49,15 @@ def handle_review_action(event_id, action):
     st.toast(f"✅ **{event_id}** 건에 대한 수동 **{action_kor}** 처리가 완료되었습니다.", icon="🚨" if action == "Blocked" else "✅")
 
 def render_review():
+    provider = get_provider()
+    
     render_header("MANUAL REVIEW")
     st.header("고위험 계정 수동 검토")
     st.write("실시간 AI 탐지로 적발된 이력 중 추가 확인이 필요한 건(Pending/Warning)에 대해 수동 검토를 진행합니다.")
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Fetch global history data
-    df = get_enriched_history()
+    # Provider에서 글로벌 히스토리 데이터 가져오기
+    df = provider.get_enriched_history()
     
     if df.empty:
         st.success("데이터가 로드되지 않았습니다.")
@@ -128,19 +80,15 @@ def render_review():
     available_games = sorted(df["대상 경기"].unique().tolist())
     
     with filter_col1:
-        # 날짜 필터 (다중 선택 가능하게 설정)
         selected_dates = st.multiselect("📅 날짜", available_dates, default=available_dates)
     with filter_col2:
-        # 대상 경기 필터
         selected_games = st.multiselect("⚾ 대상 경기", available_games, default=available_games)
     with filter_col3:
-        # 심사 대상 상태 필터 (기본적으로 Pending과 Warning만)
         selected_status = st.multiselect("🚥 심사 상태", ["Pending", "Warning", "Blocked", "Passed"], default=["Pending", "Warning"])
 
     st.markdown("<br>", unsafe_allow_html=True)
 
     # 3. 데이터프레임 필터링 적용
-    # 선택된 값이 없으면 아무것도 보여주지 않는 것이 일반적이므로 isin에 빈 리스트가 들어가면 empty가 됨
     filtered_df = df[
         (df["접속일자"].isin(selected_dates)) & 
         (df["대상 경기"].isin(selected_games)) & 
@@ -157,7 +105,6 @@ def render_review():
         with st.container(border=True):
             st.markdown(f"#### {event_id}")
             
-            # Use columns to lay out the data concisely
             data_col1, data_col2, data_col3 = st.columns([1, 1, 1])
             
             with data_col1:
@@ -172,7 +119,7 @@ def render_review():
             
             st.markdown("<br>", unsafe_allow_html=True)
             
-            # Action Buttons Row (3 Columns Horizontal)
+            # Action Buttons Row
             btn_col1, btn_col2, btn_col3 = st.columns(3)
             with btn_col1:
                 if st.button("🔍 매크로 탐지 원인 분석 리포트", key=f"report_{event_id}", width="stretch"):

@@ -23,3 +23,4 @@ def render_sidebar():
         
         st.markdown("<br><br><hr style='border:none; border-top:1px solid #eee; margin:20px 0;'>", unsafe_allow_html=True)
         st.button("로그아웃", on_click=logout, width='stretch')
+
